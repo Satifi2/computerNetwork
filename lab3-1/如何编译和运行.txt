@@ -1,0 +1,7 @@
+在本文件下打开cmd,输入：
+g++ receiver.cpp -o receiver -lws2_32
+g++ sender.cpp -o sender -lws2_32
+
+路由器设置:
+路由器IP:127.0.0.1:60000
+服务器IP:127.0.0.1:61000
