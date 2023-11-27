@@ -15,7 +15,7 @@ using namespace std;
 
 struct Packet;
 void setChecksum(Packet* packet);
-
+void printPacket(const Packet& packet);
 struct Packet {
     uint16_t checksum = 0;
     uint32_t seqNum = 0;
@@ -26,10 +26,11 @@ struct Packet {
     char          reserved[5] = { 0, 0, 0, 0, 0 };
     char          message[8172];
 
-    Packet(uint32_t seq = 0, uint32_t ack = 0, uint16_t len = 0, uint8_t flgs = 0, uint16_t pkt = 0, const char* msg = "")
-        : seqNum(seq), ackNum(ack), dataLen(len), flags(flgs), packetNum(pkt) {
+    Packet(uint32_t seq = 0, uint32_t ack = 0, uint16_t len = 0, uint8_t flgs = 0, const char* msg = "")
+        : seqNum(seq), ackNum(ack), dataLen(len), flags(flgs) {
         memcpy(this->message, msg, len);
         setChecksum(this);
+        printPacket(*this);
     }
 };
 #pragma pack(pop)
@@ -60,8 +61,8 @@ bool validateChecksum(const Packet* packet) {
     return calculateChecksum(packet) == 0;
 }
 
-void printPacket(const Packet& packet, bool isSent, bool showMessage) {
-    cout << (isSent ? "[Sent" : "[Received") << " Packet]: "
+void printPacket(const Packet& packet) {
+    cout << " [package]: "
         << "validateChecksum: " << (validateChecksum(&packet) ? "true" : "false")
         << ", SeqNum: " << packet.seqNum
         << ", AckNum: " << packet.ackNum
@@ -80,16 +81,11 @@ void printPacket(const Packet& packet, bool isSent, bool showMessage) {
         cout << (firstFlag ? "" : ",") << "FIN";
         firstFlag = false;
     }
-    cout << "]";
-    if (showMessage) {
-        cout << endl << "Message: " << packet.message << endl;
-    }
-    else {
-        cout << endl;
-    }
+    cout << "]"<<endl;
 }
 
 void printSenderArt() {
+    system("cls");
     cout << "  ___    ___   _ __     __| |   ___   _ __ \n";
     cout << " / __|  / _ \\ | '_ \\   / _` |  / _ \\ | '__|\n";
     cout << " \\__ \\ |  __/ | | | | | (_| | |  __/ | |   \n";
@@ -97,6 +93,7 @@ void printSenderArt() {
 }
 
 void printReceiver() {
+    system("cls");
     cout << "                              _                       " << endl;
     cout << "  _ __    ___    ___    ___  (_) __   __   ___   _ __ " << endl;
     cout << " | '__|  / _ \\  / __|  / _ \\ | | \\ \\ / /  / _ \\ | '__|" << endl;
