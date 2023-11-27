@@ -31,7 +31,6 @@ struct Packet {
         memcpy(this->message, msg, len);
         setChecksum(this);
     }
-
 };
 #pragma pack(pop)
 
@@ -39,7 +38,6 @@ enum Flag {
     SYN = 1,
     ACK = 2,
     FIN = 4,
-
 };
 
 uint16_t calculateChecksum(const Packet* packet) {
