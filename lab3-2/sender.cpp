@@ -3,25 +3,18 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200,ACKNum = 0;
+int timeout = 200, ACKNum = 0;
 char fileName[256];
 FILE* inFile;
 
 void sendAndReceive(Packet packet, uint8_t firstExpectedFlags) {
-    int serverAddrSize = sizeof(serverAddr),recvResult;
-    bool shouldResend = true;
+    int serverAddrSize = sizeof(serverAddr), recvResult;
     setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
     while (true) {
-        if (shouldResend) {
-            sendto(clientSocket, (char*)&packet, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, serverAddrSize);
-            shouldResend = false;
-        }
+        sendto(clientSocket, (char*)&packet, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, serverAddrSize);
         recvResult = recvfrom(clientSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, &serverAddrSize);
         if (recvResult < 0 || !validateChecksum(&receivedPacket) || receivedPacket.flags != firstExpectedFlags) {
-            if (recvResult < 0) {
-                shouldResend = true;
-                cout<<"time out resending"<<endl;
-            }
+            cout << "resending" << endl;
             continue;
         }
         ACKNum += receivedPacket.dataLen;
@@ -29,7 +22,7 @@ void sendAndReceive(Packet packet, uint8_t firstExpectedFlags) {
     }
 }
 
-void init(){
+void init() {
     WSAStartup(MAKEWORD(2, 2), &wsa);
     clientSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     memset((char*)&serverAddr, 0, sizeof(serverAddr));
@@ -39,7 +32,7 @@ void init(){
 }
 
 int main() {
-    printSenderArt(),init();
+    printSenderArt(), init();
     cout << "Enter filename: ";
     cin >> fileName;
     inFile = fopen(("./source/" + string(fileName)).c_str(), "rb");
@@ -56,6 +49,6 @@ int main() {
     sentPacket = Packet(receivedPacket.ackNum, ACKNum, 1, FIN | ACK, ".");
     sendAndReceive(sentPacket, ACK);
     cout << "File transfer completed successfully." << endl;
-    fclose(inFile),system("pause");
+    fclose(inFile), system("pause");
     return 0;
 }
