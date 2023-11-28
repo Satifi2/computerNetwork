@@ -4,9 +4,17 @@ WSADATA wsa;
 SOCKET serverSocket;
 struct sockaddr_in serverAddr, remoteAddr;
 Packet sentPacket, receivedPacket;
-int ACKNum = 0, remoteAddrSize = sizeof(remoteAddr);
+int ack = 0, remoteAddrSize = sizeof(remoteAddr);
 char fileName[256];
 FILE* outFile;
+
+void send(){
+    sendto(serverSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, remoteAddrSize);
+}
+
+int receive(){
+    return recvfrom(serverSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, &remoteAddrSize);
+}
 
 void init (){
     WSAStartup(MAKEWORD(2, 2), &wsa);
@@ -19,30 +27,29 @@ void init (){
 
 int main() {
     printReceiver(),init();
-    cout<<"Enter filename: ";
-    cin>>fileName;
+    cout<<"Enter filename: ",cin>>fileName;
     outFile = fopen(fileName, "wb");
     do {
-        recvfrom(serverSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, &remoteAddrSize);
-    } while (!validateChecksum(&receivedPacket) || receivedPacket.flags != SYN || receivedPacket.seqNum != 0);
-    ACKNum += receivedPacket.dataLen;
-    sentPacket = Packet(0, ACKNum, 1, SYN | ACK, ".");
-    sendto(serverSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, remoteAddrSize);
+        receive();
+    } while (!validateChecksum(&receivedPacket) || receivedPacket.flags != SYN || receivedPacket.seqNum != ack);
+    ack += 1;
+    sentPacket = Packet(0, ack, 1, SYN | ACK, ".");
+    send();
     while (true) {
-        recvfrom(serverSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, &remoteAddrSize);
-        if (!validateChecksum(&receivedPacket) || receivedPacket.flags & ACK == 0 || ACKNum != receivedPacket.seqNum) {
+        receive();
+        if (!validateChecksum(&receivedPacket) || receivedPacket.flags & ACK == 0 || receivedPacket.seqNum != ack) {
             continue;
         }
-        ACKNum += receivedPacket.dataLen;
+        ack += 1;
         if (receivedPacket.flags == (FIN | ACK)) {
-            sentPacket = Packet(receivedPacket.ackNum, ACKNum, 1, ACK, ".");
-            sendto(serverSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, remoteAddrSize);
+            sentPacket = Packet(0, ack, 1, ACK, ".");
+            send();
             break;
         }
         else {
             fwrite(receivedPacket.message, 1, receivedPacket.dataLen, outFile);
-            sentPacket = Packet(receivedPacket.ackNum, ACKNum, 1, ACK, ".");
-            sendto(serverSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, remoteAddrSize);
+            sentPacket = Packet(0, ack, 1, ACK, ".");
+            send();
         }
     }
     cout << "File transfer completed." << endl;

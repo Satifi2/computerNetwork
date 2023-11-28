@@ -86,6 +86,7 @@ void printPacket(const Packet& packet) {
 
 void printSenderArt() {
     system("cls");
+    cout<<"CLIENT_PORT 60000"<<endl<<"SERVER_PORT 61000"<<endl;
     cout << "  ___    ___   _ __     __| |   ___   _ __ \n";
     cout << " / __|  / _ \\ | '_ \\   / _` |  / _ \\ | '__|\n";
     cout << " \\__ \\ |  __/ | | | | | (_| | |  __/ | |   \n";
@@ -94,6 +95,7 @@ void printSenderArt() {
 
 void printReceiver() {
     system("cls");
+    cout<<"CLIENT_PORT 60000"<<endl<<"SERVER_PORT 61000"<<endl;
     cout << "                              _                       " << endl;
     cout << "  _ __    ___    ___    ___  (_) __   __   ___   _ __ " << endl;
     cout << " | '__|  / _ \\  / __|  / _ \\ | | \\ \\ / /  / _ \\ | '__|" << endl;
