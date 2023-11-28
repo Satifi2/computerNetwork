@@ -27,6 +27,37 @@ void sendAndReceive(uint8_t ExpectedFlags) {
     }
 }
 
+void receiverThread() {
+    while (true) {
+        recvResult = receive();
+        if (recvResult < 0) {
+            cout << "resending all" << endl;
+            for (auto& packet : window)sentPacket = packet, send();
+            continue;
+        }
+        if (receivedPacket.flags == ACK && receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
+            while (window.size() && window[0].seqNum <= receivedPacket.ackNum)window.erase(window.begin());
+        }
+        if (feof(inFile) && window.size() == 0) break;
+    }
+}
+
+
+void senderThread() {
+    while (true) {
+        while (!feof(inFile) && window.size() < N) {
+            int bytesRead = fread(sentPacket.message, 1, sizeof(sentPacket.message), inFile);
+            if (bytesRead > 0) {
+                sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
+                send(), window.push_back(sentPacket);
+            }
+            printWindow(window);
+        }
+        if (feof(inFile) && window.size() == 0) break;
+    }
+}
+
+
 void init() {
     WSAStartup(MAKEWORD(2, 2), &wsa);
     clientSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -42,26 +73,13 @@ int main() {
     inFile = fopen(("./source/" + string(fileName)).c_str(), "rb");
     sentPacket = Packet(seq++, 0, 0, SYN, "");
     sendAndReceive(SYN | ACK);
-    while (true) {
-        while (!feof(inFile) && window.size() <= N) {
-            int bytesRead = fread(sentPacket.message, 1, sizeof(sentPacket.message), inFile);
-            if (bytesRead > 0) {
-                sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
-                send(), window.push_back(sentPacket);
-            }
-            printWindow(window);
-        }
-        if (feof(inFile) && window.size() == 0) break;
-        recvResult = receive();
-        if (recvResult < 0) {
-            cout << "resending all" << endl;
-            for (auto& packet : window)sentPacket = packet, send();
-            continue;
-        }
-        if (receivedPacket.flags == ACK && receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
-            while (window.size() && window[0].seqNum <= receivedPacket.ackNum)window.erase(window.begin());
-        }
-    }
+
+    std::thread sender(senderThread);
+    std::thread receiver(receiverThread);
+
+    sender.join();
+    receiver.join();
+
     sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
     sendAndReceive(ACK);
     cout << "File transfer completed successfully." << endl;
