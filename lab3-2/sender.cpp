@@ -7,6 +7,7 @@ int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
+std::mutex windowMutex;
 
 void send() {
     sendto(clientSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, serverAddrSize);
@@ -31,30 +32,42 @@ void receiverThread() {
     while (true) {
         recvResult = receive();
         if (recvResult < 0) {
+            std::lock_guard<std::mutex> lock(windowMutex);
             cout << "resending all" << endl;
-            for (auto& packet : window)sentPacket = packet, send();
+            for (auto& packet : window) {
+                sentPacket = packet;
+                send();
+            }
             continue;
         }
-        if (receivedPacket.flags == ACK && receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
-            while (window.size() && window[0].seqNum <= receivedPacket.ackNum)window.erase(window.begin());
+        if (receivedPacket.flags == ACK) {
+            std::lock_guard<std::mutex> lock(windowMutex);
+            if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
+                while (window.size() && window[0].seqNum <= receivedPacket.ackNum) {
+                    window.erase(window.begin());
+                }
+            }
         }
         if (feof(inFile) && window.size() == 0) break;
     }
     cout << "receiverThread finished." << endl;
 }
 
-
 void senderThread() {
     while (true) {
-        while (!feof(inFile) && window.size() < N) {
+        if (!feof(inFile) && window.size() < N) {
             int bytesRead = fread(sentPacket.message, 1, sizeof(sentPacket.message), inFile);
             if (bytesRead > 0) {
                 sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
-                send(), window.push_back(sentPacket);
+                send();
+                {
+                    std::lock_guard<std::mutex> lock(windowMutex);
+                    window.push_back(sentPacket);
+                }
+                printWindow(window);
             }
-            printWindow(window);
         }
-        if (feof(inFile)) break;
+        if (feof(inFile) && window.size() == 0) break;
     }
     cout << "senderThread finished." << endl;
 }
