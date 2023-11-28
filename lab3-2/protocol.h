@@ -14,7 +14,7 @@ using namespace std;
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
-#define N 32
+#define N 4
 
 #pragma pack(push, 1)
 

@@ -40,6 +40,7 @@ void receiverThread() {
         }
         if (feof(inFile) && window.size() == 0) break;
     }
+    cout << "receiverThread finished." << endl;
 }
 
 
@@ -53,8 +54,9 @@ void senderThread() {
             }
             printWindow(window);
         }
-        if (feof(inFile) && window.size() == 0) break;
+        if (feof(inFile)) break;
     }
+    cout << "senderThread finished." << endl;
 }
 
 
@@ -74,8 +76,8 @@ int main() {
     sentPacket = Packet(seq++, 0, 0, SYN, "");
     sendAndReceive(SYN | ACK);
 
-    std::thread sender(senderThread);
-    std::thread receiver(receiverThread);
+    thread sender(senderThread);
+    thread receiver(receiverThread);
 
     sender.join();
     receiver.join();
