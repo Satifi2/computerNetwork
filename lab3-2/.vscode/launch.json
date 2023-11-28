@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "h:/Tool/code/VMware/Ubuntu22/shared_file/ComputerNetwork/lab3-2",
-      "program": "h:/Tool/code/VMware/Ubuntu22/shared_file/ComputerNetwork/lab3-2/build/Debug/outDebug",
+      "cwd": "h:/Tool/code/VMware/Ubuntu22/shared_file/ComputerNetwork/computerNetwork/lab3-2",
+      "program": "h:/Tool/code/VMware/Ubuntu22/shared_file/ComputerNetwork/computerNetwork/lab3-2/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

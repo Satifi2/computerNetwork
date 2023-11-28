@@ -19,7 +19,7 @@ void sendAndReceive(uint8_t ExpectedFlags) {
     int recvResult;
     while (true) {
         send(),recvResult = receive();
-        if (recvResult < 0 || !validateChecksum(&receivedPacket) || receivedPacket.flags != ExpectedFlags) {
+        if (recvResult < 0 ||  receivedPacket.flags != ExpectedFlags) {
             cout << "resending" << endl;
             continue;
         }
@@ -40,7 +40,7 @@ int main() {
     printSenderArt(), init();
     cout << "Enter filename: ",cin >> fileName;
     inFile = fopen(("./source/" + string(fileName)).c_str(), "rb");
-    sentPacket = Packet(seq++, 0, 1, SYN, ".");
+    sentPacket = Packet(seq++, 0, 0, SYN, "");
     sendAndReceive(SYN | ACK);
     while (!feof(inFile)) {
         int bytesRead = fread(sentPacket.message, 1, sizeof(sentPacket.message), inFile);
@@ -49,7 +49,7 @@ int main() {
             sendAndReceive(ACK);
         }
     }
-    sentPacket = Packet(seq++, 0, 1, FIN | ACK, ".");
+    sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
     sendAndReceive(ACK);
     cout << "File transfer completed successfully." << endl;
     fclose(inFile), system("pause");

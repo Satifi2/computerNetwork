@@ -4,19 +4,19 @@ WSADATA wsa;
 SOCKET serverSocket;
 struct sockaddr_in serverAddr, remoteAddr;
 Packet sentPacket, receivedPacket;
-int ack = 0, remoteAddrSize = sizeof(remoteAddr);
+int ack = -1, remoteAddrSize = sizeof(remoteAddr);
 char fileName[256];
 FILE* outFile;
 
-void send(){
+void send() {
     sendto(serverSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, remoteAddrSize);
 }
 
-int receive(){
+int receive() {
     return recvfrom(serverSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, &remoteAddrSize);
 }
 
-void init (){
+void init() {
     WSAStartup(MAKEWORD(2, 2), &wsa);
     serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     serverAddr.sin_family = AF_INET;
@@ -26,33 +26,31 @@ void init (){
 }
 
 int main() {
-    printReceiver(),init();
-    cout<<"Enter filename: ",cin>>fileName;
+    printReceiver(), init();
+    cout << "Enter filename: ", cin >> fileName;
     outFile = fopen(fileName, "wb");
     do {
         receive();
-    } while (!validateChecksum(&receivedPacket) || receivedPacket.flags != SYN || receivedPacket.seqNum != ack);
-    ack += 1;
-    sentPacket = Packet(0, ack, 1, SYN | ACK, ".");
+    } while (receivedPacket.flags != SYN || receivedPacket.seqNum != ack + 1);
+    sentPacket = Packet(0, ++ack, 0, SYN | ACK, "");
     send();
     while (true) {
         receive();
-        if (!validateChecksum(&receivedPacket) || receivedPacket.flags & ACK == 0 || receivedPacket.seqNum != ack) {
+        if (receivedPacket.flags & ACK == 0 || receivedPacket.seqNum != ack + 1) {
             continue;
         }
-        ack += 1;
         if (receivedPacket.flags == (FIN | ACK)) {
-            sentPacket = Packet(0, ack, 1, ACK, ".");
+            sentPacket = Packet(0, ++ack, 0, ACK, "");
             send();
             break;
         }
         else {
             fwrite(receivedPacket.message, 1, receivedPacket.dataLen, outFile);
-            sentPacket = Packet(0, ack, 1, ACK, ".");
+            sentPacket = Packet(0, ++ack, 0, ACK, "");
             send();
         }
     }
     cout << "File transfer completed." << endl;
-    fclose(outFile),system("pause");
+    fclose(outFile), system("pause");
     return 0;
 }
