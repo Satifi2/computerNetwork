@@ -4,12 +4,14 @@
 #include<cstring>
 #include <chrono>
 #include <cstdio>
+#include<vector>
 using namespace std;
 #pragma comment(lib,"ws2_32.lib")
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
+#define N 16
 
 #pragma pack(push, 1)
 
@@ -101,4 +103,12 @@ void printReceiver() {
     cout << " | '__|  / _ \\  / __|  / _ \\ | | \\ \\ / /  / _ \\ | '__|" << endl;
     cout << " | |    |  __/ | (__  |  __/ | |  \\ V /  |  __/ | |   " << endl;
     cout << " |_|     \\___|  \\___|  \\___| |_|   \\_/    \\___| |_|   " << endl;
+}
+
+void printWindow(vector<Packet>&window){
+    for (int i = 0; i < N; i++){
+        if(i<window.size())cout<<"# ";
+        else cout<<"- ";
+    }
+    cout<<endl;
 }

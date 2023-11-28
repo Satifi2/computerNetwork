@@ -36,17 +36,18 @@ int main() {
     send();
     while (true) {
         receive();
-        if (receivedPacket.flags & ACK == 0 || receivedPacket.seqNum != ack + 1) {
-            continue;
-        }
         if (receivedPacket.flags == (FIN | ACK)) {
             sentPacket = Packet(0, ++ack, 0, ACK, "");
             send();
             break;
         }
-        else {
+        if (receivedPacket.seqNum == ack + 1) {
             fwrite(receivedPacket.message, 1, receivedPacket.dataLen, outFile);
             sentPacket = Packet(0, ++ack, 0, ACK, "");
+            send();
+        }
+        else {
+            sentPacket = Packet(0, ack, 0, ACK, "");
             send();
         }
     }

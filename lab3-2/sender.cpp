@@ -3,23 +3,24 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200,seq=0,serverAddrSize=sizeof(serverAddr);
+int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr);
 char fileName[256];
 FILE* inFile;
+vector<Packet>window;
 
-void send(){
+void send() {
     sendto(clientSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, serverAddrSize);
 }
 
-int receive(){
+int receive() {
     return recvfrom(clientSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, &serverAddrSize);
 }
 
 void sendAndReceive(uint8_t ExpectedFlags) {
     int recvResult;
     while (true) {
-        send(),recvResult = receive();
-        if (recvResult < 0 ||  receivedPacket.flags != ExpectedFlags) {
+        send(), recvResult = receive();
+        if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
             cout << "resending" << endl;
             continue;
         }
@@ -38,15 +39,23 @@ void init() {
 
 int main() {
     printSenderArt(), init();
-    cout << "Enter filename: ",cin >> fileName;
+    cout << "Enter filename: ", cin >> fileName;
     inFile = fopen(("./source/" + string(fileName)).c_str(), "rb");
     sentPacket = Packet(seq++, 0, 0, SYN, "");
     sendAndReceive(SYN | ACK);
-    while (!feof(inFile)) {
-        int bytesRead = fread(sentPacket.message, 1, sizeof(sentPacket.message), inFile);
-        if (bytesRead > 0) {
-            sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
-            sendAndReceive(ACK);
+    while (true) {
+        while (!feof(inFile) && window.size() <= N) {
+            int bytesRead = fread(sentPacket.message, 1, sizeof(sentPacket.message), inFile);
+            if (bytesRead > 0) {
+                sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
+                send(), window.push_back(sentPacket);
+            }
+            printWindow(window);
+        }
+        if (feof(inFile)) break;
+        receive();
+        if (receivedPacket.flags == ACK && receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
+            while (window.size() && window[0].seqNum <= receivedPacket.ackNum)window.erase(window.begin());
         }
     }
     sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
