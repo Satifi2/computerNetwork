@@ -7,14 +7,19 @@ int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
-std::mutex windowMutex;
+mutex windowMutex;
 
 void send() {
     sendto(clientSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, serverAddrSize);
 }
 
 int receive() {
-    return recvfrom(clientSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, &serverAddrSize);
+    int receivedRes;
+    while (true) {
+        receivedRes = recvfrom(clientSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, &serverAddrSize);
+        if (validateChecksum(&receivedPacket) || receivedPacket.flags & ACK == 0) break;
+    }
+    return receivedRes;
 }
 
 void sendAndReceive(uint8_t ExpectedFlags) {
@@ -32,7 +37,6 @@ void receiverThread() {
     while (true) {
         recvResult = receive();
         if (recvResult < 0) {
-            std::lock_guard<std::mutex> lock(windowMutex);
             cout << "resending all" << endl;
             for (auto& packet : window) {
                 sentPacket = packet;
@@ -41,10 +45,13 @@ void receiverThread() {
             continue;
         }
         if (receivedPacket.flags == ACK) {
-            std::lock_guard<std::mutex> lock(windowMutex);
-            if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
-                while (window.size() && window[0].seqNum <= receivedPacket.ackNum) {
-                    window.erase(window.begin());
+            lock_guard<mutex> lock(windowMutex);
+            for (auto it = window.begin(); it != window.end(); ) {
+                if (it->seqNum == receivedPacket.ackNum) {
+                    it = window.erase(it); 
+                    break; 
+                } else {
+                    ++it;
                 }
             }
         }
@@ -60,10 +67,8 @@ void senderThread() {
             if (bytesRead > 0) {
                 sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
                 send();
-                {
-                    std::lock_guard<std::mutex> lock(windowMutex);
-                    window.push_back(sentPacket);
-                }
+                lock_guard<mutex> lock(windowMutex);
+                window.push_back(sentPacket);
                 printWindow(window);
             }
         }

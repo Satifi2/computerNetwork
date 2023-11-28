@@ -5,13 +5,16 @@
 #include <chrono>
 #include <cstdio>
 #include<vector>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 using namespace std;
 #pragma comment(lib,"ws2_32.lib")
 
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
-#define N 16
+#define N 32
 
 #pragma pack(push, 1)
 

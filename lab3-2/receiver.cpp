@@ -13,7 +13,12 @@ void send() {
 }
 
 int receive() {
-    return recvfrom(serverSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, &remoteAddrSize);
+    int receivedRes;
+    while (true) {
+       receivedRes = recvfrom(serverSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&remoteAddr, &remoteAddrSize);
+       if(validateChecksum(&receivedPacket)) break;
+    }
+    return receivedRes;
 }
 
 void init() {
