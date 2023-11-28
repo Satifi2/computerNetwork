@@ -83,12 +83,12 @@ void printPacket(const Packet& packet) {
         cout << (firstFlag ? "" : ",") << "FIN";
         firstFlag = false;
     }
-    cout << "]"<<endl;
+    cout << "]" << endl;
 }
 
 void printSenderArt() {
     system("cls");
-    cout<<"CLIENT_PORT 60000"<<endl<<"SERVER_PORT 61000"<<endl;
+    cout << "CLIENT_PORT 60000" << endl << "SERVER_PORT 61000" << endl;
     cout << "  ___    ___   _ __     __| |   ___   _ __ \n";
     cout << " / __|  / _ \\ | '_ \\   / _` |  / _ \\ | '__|\n";
     cout << " \\__ \\ |  __/ | | | | | (_| | |  __/ | |   \n";
@@ -97,7 +97,7 @@ void printSenderArt() {
 
 void printReceiver() {
     system("cls");
-    cout<<"CLIENT_PORT 60000"<<endl<<"SERVER_PORT 61000"<<endl;
+    cout << "CLIENT_PORT 60000" << endl << "SERVER_PORT 61000" << endl;
     cout << "                              _                       " << endl;
     cout << "  _ __    ___    ___    ___  (_) __   __   ___   _ __ " << endl;
     cout << " | '__|  / _ \\  / __|  / _ \\ | | \\ \\ / /  / _ \\ | '__|" << endl;
@@ -105,10 +105,11 @@ void printReceiver() {
     cout << " |_|     \\___|  \\___|  \\___| |_|   \\_/    \\___| |_|   " << endl;
 }
 
-void printWindow(vector<Packet>&window){
-    for (int i = 0; i < N; i++){
-        if(i<window.size())cout<<"# ";
-        else cout<<"- ";
+void printWindow(vector<Packet>& window) {
+    cout << "window[";
+    for (int i = 0; i < N; i++) {
+        if (i < window.size())cout << window[i].seqNum << " ";
+        else cout << "- ";
     }
-    cout<<endl;
+    cout << "]" << endl;
 }
