@@ -3,7 +3,7 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr);
+int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
@@ -17,7 +17,6 @@ int receive() {
 }
 
 void sendAndReceive(uint8_t ExpectedFlags) {
-    int recvResult;
     while (true) {
         send(), recvResult = receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
@@ -52,8 +51,13 @@ int main() {
             }
             printWindow(window);
         }
-        if (feof(inFile)) break;
-        receive();
+        if (feof(inFile) && window.size() == 0) break;
+        recvResult = receive();
+        if (recvResult < 0) {
+            cout << "resending all" << endl;
+            for (auto& packet : window)sentPacket = packet, send();
+            continue;
+        }
         if (receivedPacket.flags == ACK && receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
             while (window.size() && window[0].seqNum <= receivedPacket.ackNum)window.erase(window.begin());
         }
