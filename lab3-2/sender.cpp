@@ -3,7 +3,8 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult,maxTimeout = 2000 , minTimeout = 100;
+int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult,maxTimeout = 2000 , minTimeout = 100 ;
+int lastPacketAck = 0, samePacketCount = 0;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
@@ -37,13 +38,17 @@ void sendAndReceive(uint8_t ExpectedFlags) {
 
 void receiverThread() {
     while (true) {
+        lastPacketAck=receivedPacket.ackNum;
         receive();
-        if (recvResult < 0) {
+        if(receivedPacket.ackNum==lastPacketAck)samePacketCount++;
+        else samePacketCount=0;
+        if (recvResult < 0 || (samePacketCount > 5 && FastRetransmission)  ) {
             timeout=(timeout<maxTimeout)?timeout+50:timeout,cout << "resending all" << endl;
             for (auto& packet : window) {
                 sentPacket = packet;
                 send();
             }
+            if(samePacketCount > 5 && FastRetransmission)cout<<"quick retransmission"<<endl,samePacketCount=0;
             continue;
         }
         if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {

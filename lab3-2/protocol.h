@@ -14,8 +14,9 @@ using namespace std;
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
-#define N 32
 #define MAXTRY 25
+#define FastRetransmission 0
+#define N 16
 
 #pragma pack(push, 1)
 

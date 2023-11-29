@@ -3,7 +3,8 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult,maxTimeout = 2000 , minTimeout = 100;
+int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult, maxTimeout = 2000, minTimeout = 100;
+int lastPacketAck = 0, samePacketCount = 0;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
@@ -27,28 +28,31 @@ void sendAndReceive(uint8_t ExpectedFlags) {
         if (tryCount == 0)break;
         send(), receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
-            tryCount--,timeout=(timeout<maxTimeout)?timeout+50:timeout, cout << "resending" << endl;
+            tryCount--, timeout = (timeout < maxTimeout) ? timeout + 50 : timeout, cout << "resending" << endl;
             continue;
         }
-        timeout=(timeout>minTimeout)?timeout-50:timeout;
+        timeout = (timeout > minTimeout) ? timeout - 50 : timeout;
         break;
     }
 }
 
 void receiverThread() {
     while (true) {
+        lastPacketAck = receivedPacket.ackNum;
         receive();
-        cout << "receivedPacket.ackNum" << receivedPacket.ackNum << endl;
-        if (recvResult < 0) {
-            timeout=(timeout<maxTimeout)?timeout+50:timeout,cout << "resending all" << endl;
+        if (receivedPacket.ackNum == lastPacketAck)samePacketCount++;
+        else samePacketCount = 0;
+        if (recvResult < 0 || (samePacketCount > 5 && FastRetransmission) ) {
+            timeout = (timeout < maxTimeout) ? timeout + 50 : timeout, cout << "resending all" << endl;
             for (auto& packet : window) {
                 sentPacket = packet;
                 send();
             }
+            if(samePacketCount > 5 && FastRetransmission)cout<<"quick retransmission"<<endl,samePacketCount=0;
             continue;
         }
         if (receivedPacket.flags == ACK) {
-            timeout=(timeout>minTimeout)?timeout-50:timeout;
+            timeout = (timeout > minTimeout) ? timeout - 50 : timeout;
             lock_guard<mutex> lock(windowMutex);
             for (auto it = window.begin(); it != window.end(); ) {
                 if (it->seqNum == receivedPacket.ackNum) {

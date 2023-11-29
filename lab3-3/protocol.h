@@ -15,9 +15,10 @@ using namespace std;
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
-#define N 32
-#define M 16
 #define MAXTRY 25
+#define FastRetransmission 1
+#define N 4
+#define M 16
 
 #pragma pack(push, 1)
 
@@ -128,7 +129,7 @@ void printWindow(set<Packet>& window) {
     for(auto& packet : window) {
         cout << packet.seqNum << " ";
     }
-    for(int i = 0; i < N - window.size(); i++) {
+    for(int i = 0; i < M - window.size(); i++) {
         cout << "- ";
     }
     cout << "]" << endl;
