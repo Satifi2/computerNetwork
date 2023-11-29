@@ -80,6 +80,7 @@
     "cwchar": "cpp",
     "cwctype": "cpp",
     "deque": "cpp",
+    "set": "cpp",
     "unordered_map": "cpp",
     "vector": "cpp",
     "exception": "cpp",

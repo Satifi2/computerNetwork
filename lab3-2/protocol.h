@@ -20,7 +20,7 @@ using namespace std;
 
 struct Packet;
 void setChecksum(Packet* packet);
-void printPacket(const Packet& packet);
+void printPacket(const Packet& packet,int isSent) ;
 struct Packet {
     uint16_t checksum = 0;
     uint32_t seqNum = 0;
@@ -35,7 +35,7 @@ struct Packet {
         : seqNum(seq), ackNum(ack), dataLen(len), flags(flgs) {
         memcpy(this->message, msg, len);
         setChecksum(this);
-        printPacket(*this);
+        printPacket(*this,-1);
     }
 };
 #pragma pack(pop)
@@ -66,8 +66,8 @@ bool validateChecksum(const Packet* packet) {
     return calculateChecksum(packet) == 0;
 }
 
-void printPacket(const Packet& packet) {
-    cout << " [package]: "
+void printPacket(const Packet& packet,int isSent = -1) {
+    cout << (isSent ==-1 ? "[" :isSent ==1 ?  "[Sent" : "[Received") << " Packet]: "
         << "validateChecksum: " << (validateChecksum(&packet) ? "true" : "false")
         << ", SeqNum: " << packet.seqNum
         << ", AckNum: " << packet.ackNum

@@ -13,18 +13,17 @@ void send() {
     sendto(clientSocket, (char*)&sentPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, serverAddrSize);
 }
 
-int receive() {
-    int receivedRes;
+void receive() {
     while (true) {
-        receivedRes = recvfrom(clientSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, &serverAddrSize);
+        recvResult = recvfrom(clientSocket, (char*)&receivedPacket, sizeof(Packet), 0, (struct sockaddr*)&serverAddr, &serverAddrSize);
         if (validateChecksum(&receivedPacket) || receivedPacket.flags & ACK == 0) break;
     }
-    return receivedRes;
+    printPacket(receivedPacket, 0);
 }
 
 void sendAndReceive(uint8_t ExpectedFlags) {
     while (true) {
-        send(), recvResult = receive();
+        send(), receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
             cout << "resending" << endl;
             continue;
@@ -35,7 +34,7 @@ void sendAndReceive(uint8_t ExpectedFlags) {
 
 void receiverThread() {
     while (true) {
-        recvResult = receive();
+        receive();
         if (recvResult < 0) {
             cout << "resending all" << endl;
             for (auto& packet : window) {
@@ -46,12 +45,9 @@ void receiverThread() {
         }
         if (receivedPacket.flags == ACK) {
             lock_guard<mutex> lock(windowMutex);
-            for (auto it = window.begin(); it != window.end(); ) {
-                if (it->seqNum == receivedPacket.ackNum) {
-                    it = window.erase(it); 
-                    break; 
-                } else {
-                    ++it;
+            if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
+                while (window.size() && window[0].seqNum <= receivedPacket.ackNum) {
+                    window.erase(window.begin());
                 }
             }
         }
@@ -67,9 +63,11 @@ void senderThread() {
             if (bytesRead > 0) {
                 sentPacket = Packet(seq++, 0, bytesRead, ACK, sentPacket.message);
                 send();
-                lock_guard<mutex> lock(windowMutex);
-                window.push_back(sentPacket);
-                printWindow(window);
+                {
+                    lock_guard<mutex> lock(windowMutex);
+                    window.push_back(sentPacket);
+                }
+                printWindow(window), this_thread::sleep_for(chrono::milliseconds(1));
             }
         }
         if (feof(inFile) && window.size() == 0) break;

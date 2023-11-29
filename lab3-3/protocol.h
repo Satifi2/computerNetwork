@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdio>
 #include<vector>
+#include <set>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -15,12 +16,13 @@ using namespace std;
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
 #define N 32
+#define M 16
 
 #pragma pack(push, 1)
 
 struct Packet;
 void setChecksum(Packet* packet);
-void printPacket(const Packet& packet);
+void printPacket(const Packet& packet,int isSent) ;
 struct Packet {
     uint16_t checksum = 0;
     uint32_t seqNum = 0;
@@ -35,7 +37,10 @@ struct Packet {
         : seqNum(seq), ackNum(ack), dataLen(len), flags(flgs) {
         memcpy(this->message, msg, len);
         setChecksum(this);
-        printPacket(*this);
+        printPacket(*this,-1);
+    }
+    bool operator<(const Packet& other) const {
+        return seqNum < other.seqNum;
     }
 };
 #pragma pack(pop)
@@ -66,8 +71,8 @@ bool validateChecksum(const Packet* packet) {
     return calculateChecksum(packet) == 0;
 }
 
-void printPacket(const Packet& packet) {
-    cout << " [package]: "
+void printPacket(const Packet& packet,int isSent = -1) {
+    cout << (isSent ==-1 ? "[" :isSent ==1 ?  "[Sent" : "[Received") << " Packet]: "
         << "validateChecksum: " << (validateChecksum(&packet) ? "true" : "false")
         << ", SeqNum: " << packet.seqNum
         << ", AckNum: " << packet.ackNum
@@ -113,6 +118,17 @@ void printWindow(vector<Packet>& window) {
     for (int i = 0; i < N; i++) {
         if (i < window.size())cout << window[i].seqNum << " ";
         else cout << "- ";
+    }
+    cout << "]" << endl;
+}
+
+void printWindow(set<Packet>& window) {
+    cout << "window[";
+    for(auto& packet : window) {
+        cout << packet.seqNum << " ";
+    }
+    for(int i = 0; i < N - window.size(); i++) {
+        cout << "- ";
     }
     cout << "]" << endl;
 }
