@@ -15,6 +15,7 @@ using namespace std;
 #define SERVER_PORT 61000
 #define CLIENT_PORT 60000
 #define N 32
+#define MAXTRY 25
 
 #pragma pack(push, 1)
 

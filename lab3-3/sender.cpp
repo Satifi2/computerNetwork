@@ -22,10 +22,12 @@ void receive() {
 }
 
 void sendAndReceive(uint8_t ExpectedFlags) {
+    int tryCount = MAXTRY;
     while (true) {
-        send(),receive();
+        if(tryCount==0)break;
+        send(), receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
-            cout << "resending" << endl;
+            tryCount--,cout << "resending" << endl;
             continue;
         }
         break;

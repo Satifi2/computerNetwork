@@ -8,6 +8,8 @@ int ack = -1, remoteAddrSize = sizeof(remoteAddr);
 char fileName[256];
 FILE* outFile;
 set<Packet> packetsSet;
+set<int> ackedPacketsSet;
+
 mutex packetsSetMutex;
 bool isFinished = false;
 
@@ -29,12 +31,17 @@ void receivePacketsThread() {
         receive();
         if (receivedPacket.flags == (FIN | ACK)) {
             isFinished = true;
+            break;
+        }
+        if(ackedPacketsSet.find(receivedPacket.seqNum) != ackedPacketsSet.end()){
+            sentPacket = Packet(0, receivedPacket.seqNum, 0, ACK, "");
+            send();
         }
         else if (receivedPacket.seqNum > ack && receivedPacket.seqNum <= ack + M) {
             lock_guard<mutex> lock(packetsSetMutex);
-            packetsSet.insert(receivedPacket);
+            packetsSet.insert(receivedPacket),ackedPacketsSet.insert(receivedPacket.seqNum);
             sentPacket = Packet(0, receivedPacket.seqNum, 0, ACK, "");
-            send(),printWindow(packetsSet),cout<<"ack: "<<ack<<endl;;
+            send(),printWindow(packetsSet),cout<<"ack: "<<ack<<endl;
         }
     }
 }

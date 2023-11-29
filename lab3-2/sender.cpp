@@ -22,10 +22,12 @@ void receive() {
 }
 
 void sendAndReceive(uint8_t ExpectedFlags) {
+    int tryCount = MAXTRY;
     while (true) {
+        if(tryCount==0)break;
         send(), receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
-            cout << "resending" << endl;
+            tryCount--,cout << "resending" << endl;
             continue;
         }
         break;
@@ -43,14 +45,13 @@ void receiverThread() {
             }
             continue;
         }
-        if (receivedPacket.flags == ACK) {
+        if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
             lock_guard<mutex> lock(windowMutex);
-            if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
-                while (window.size() && window[0].seqNum <= receivedPacket.ackNum) {
-                    window.erase(window.begin());
-                }
+            while (window.size() && window[0].seqNum <= receivedPacket.ackNum) {
+                window.erase(window.begin());
             }
         }
+
         if (feof(inFile) && window.size() == 0) break;
     }
     cout << "receiverThread finished." << endl;
