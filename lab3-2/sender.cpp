@@ -3,7 +3,7 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult;
+int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult,maxTimeout = 2000 , minTimeout = 100;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
@@ -27,9 +27,10 @@ void sendAndReceive(uint8_t ExpectedFlags) {
         if(tryCount==0)break;
         send(), receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
-            tryCount--,cout << "resending" << endl;
+            tryCount--,timeout=(timeout<maxTimeout)?timeout+50:timeout,cout << "resending" << endl;
             continue;
         }
+        timeout=(timeout>minTimeout)?timeout-50:timeout;
         break;
     }
 }
@@ -38,7 +39,7 @@ void receiverThread() {
     while (true) {
         receive();
         if (recvResult < 0) {
-            cout << "resending all" << endl;
+            timeout=(timeout<maxTimeout)?timeout+50:timeout,cout << "resending all" << endl;
             for (auto& packet : window) {
                 sentPacket = packet;
                 send();
@@ -46,12 +47,12 @@ void receiverThread() {
             continue;
         }
         if (receivedPacket.ackNum >= window[0].seqNum && receivedPacket.ackNum <= window.back().seqNum) {
+            timeout=(timeout>minTimeout)?timeout-50:timeout;
             lock_guard<mutex> lock(windowMutex);
             while (window.size() && window[0].seqNum <= receivedPacket.ackNum) {
                 window.erase(window.begin());
             }
         }
-
         if (feof(inFile) && window.size() == 0) break;
     }
     cout << "receiverThread finished." << endl;
@@ -92,6 +93,8 @@ int main() {
     inFile = fopen(("./source/" + string(fileName)).c_str(), "rb");
     sentPacket = Packet(seq++, 0, 0, SYN, "");
     sendAndReceive(SYN | ACK);
+    sentPacket = Packet(seq++, 0, 0, ACK, "");
+    sendAndReceive(ACK);
 
     thread sender(senderThread);
     thread receiver(receiverThread);
@@ -99,6 +102,8 @@ int main() {
     sender.join();
     receiver.join();
 
+    sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
+    sendAndReceive(ACK);
     sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
     sendAndReceive(ACK);
     cout << "File transfer completed successfully." << endl;

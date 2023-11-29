@@ -3,7 +3,7 @@ WSADATA wsa;
 SOCKET clientSocket;
 struct sockaddr_in serverAddr;
 Packet sentPacket, receivedPacket;
-int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult;
+int timeout = 200, seq = 0, serverAddrSize = sizeof(serverAddr), recvResult,maxTimeout = 2000 , minTimeout = 100;
 char fileName[256];
 FILE* inFile;
 vector<Packet>window;
@@ -24,12 +24,13 @@ void receive() {
 void sendAndReceive(uint8_t ExpectedFlags) {
     int tryCount = MAXTRY;
     while (true) {
-        if(tryCount==0)break;
+        if (tryCount == 0)break;
         send(), receive();
         if (recvResult < 0 || receivedPacket.flags != ExpectedFlags) {
-            tryCount--,cout << "resending" << endl;
+            tryCount--,timeout=(timeout<maxTimeout)?timeout+50:timeout, cout << "resending" << endl;
             continue;
         }
+        timeout=(timeout>minTimeout)?timeout-50:timeout;
         break;
     }
 }
@@ -37,9 +38,9 @@ void sendAndReceive(uint8_t ExpectedFlags) {
 void receiverThread() {
     while (true) {
         receive();
-        cout<<"receivedPacket.ackNum"<<receivedPacket.ackNum<<endl;
+        cout << "receivedPacket.ackNum" << receivedPacket.ackNum << endl;
         if (recvResult < 0) {
-            cout << "resending all" << endl;
+            timeout=(timeout<maxTimeout)?timeout+50:timeout,cout << "resending all" << endl;
             for (auto& packet : window) {
                 sentPacket = packet;
                 send();
@@ -47,12 +48,14 @@ void receiverThread() {
             continue;
         }
         if (receivedPacket.flags == ACK) {
+            timeout=(timeout>minTimeout)?timeout-50:timeout;
             lock_guard<mutex> lock(windowMutex);
             for (auto it = window.begin(); it != window.end(); ) {
                 if (it->seqNum == receivedPacket.ackNum) {
-                    it = window.erase(it); 
-                    break; 
-                } else {
+                    it = window.erase(it);
+                    break;
+                }
+                else {
                     ++it;
                 }
             }
@@ -71,7 +74,7 @@ void senderThread() {
                 send();
                 lock_guard<mutex> lock(windowMutex);
                 window.push_back(sentPacket);
-                printWindow(window),this_thread::sleep_for(chrono::milliseconds(1));
+                printWindow(window), this_thread::sleep_for(chrono::milliseconds(1));
             }
         }
         if (feof(inFile) && window.size() == 0) break;
@@ -95,6 +98,8 @@ int main() {
     inFile = fopen(("./source/" + string(fileName)).c_str(), "rb");
     sentPacket = Packet(seq++, 0, 0, SYN, "");
     sendAndReceive(SYN | ACK);
+    sentPacket = Packet(seq++, 0, 0, ACK, "");
+    sendAndReceive(ACK);
 
     thread sender(senderThread);
     thread receiver(receiverThread);
@@ -102,6 +107,8 @@ int main() {
     sender.join();
     receiver.join();
 
+    sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
+    sendAndReceive(ACK);
     sentPacket = Packet(seq++, 0, 0, FIN | ACK, "");
     sendAndReceive(ACK);
     cout << "File transfer completed successfully." << endl;
