@@ -1,0 +1,2 @@
+g++ receiver.cpp -o receiver -lws2_32
+g++ sender.cpp -o sender -lws2_32

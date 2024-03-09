@@ -1,0 +1,121 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    text-align: center;
+}
+
+nav ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+nav ul li a {
+    color: #fff;
+    text-decoration: none;
+}
+
+section {
+    padding: 20px;
+}
+
+footer {
+    background-color: #333;
+    color: #fff;
+    padding: 10px 0;
+    text-align: center;
+}
+
+/* 在styles.css中添加以下样式 */
+#about {
+    background-color: #fff; /* 设置背景色为白色 */
+    border: 1px solid rgba(0, 0, 0, 0.1); /* 添加边界并设置阴影 */
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
+    padding: 20px; /* 添加内边距以增加空白区域 */
+    /* text-align: center; 文字居中对齐 */
+}
+
+#about h1 {
+    background-color: rgb(173, 216, 230); /* 设置标题背景色为主题色号 */
+    color: #fff; /* 设置标题文字颜色为白色 */
+    font-size: 24px; /* 设置标题字体大小 */
+    padding: 10px; /* 添加内边距以增加空白区域 */
+    margin-top: 0; /* 去除标题的默认上外边距 */
+}
+
+#about p {
+    font-size: 18px; /* 设置段落字体大小 */
+}
+
+#about img {
+    max-width: 200px; /* 设置LOGO图片的最大宽度 */
+    margin-top: 10px; /* 添加上外边距 */
+}
+
+#about audio {
+    margin-top: 10px; /* 添加上外边距 */
+}
+
+/* 在styles.css中添加以下样式 */
+#projects{
+    /*text-align: center; /* 文字居中对齐 */
+}
+/* 项目卡片样式 */
+#projects, #contact {
+    background-color: #fff; /* 设置背景色为白色 */
+    border: 1px solid rgba(0, 0, 0, 0.1); /* 添加边界并设置阴影 */
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2); /* 添加阴影效果 */
+    padding: 20px; /* 添加内边距以增加空白区域 */
+    margin-bottom: 20px; /* 添加下外边距以分隔卡片 */
+}
+
+/* 项目标题样式 */
+#projects h2, #contact h2 {
+    background-color: rgb(173, 216, 230); /* 设置标题背景色为主题色号 */
+    color: #fff; /* 设置标题文字颜色为白色 */
+    font-size: 24px; /* 设置标题字体大小 */
+    padding: 10px; /* 添加内边距以增加空白区域 */
+    margin-top: 0; /* 去除标题的默认上外边距 */
+}
+
+/* 项目列表样式 */
+#projects ul {
+    list-style: none; /* 去除项目列表的默认样式 */
+    padding: 0;
+}
+
+/* 项目列表项样式 */
+#projects li {
+    margin-bottom: 20px; /* 添加下外边距以分隔项目 */
+}
+
+/* 项目名称样式 */
+#projects h3 {
+    font-size: 20px; /* 设置项目名称字体大小 */
+}
+
+/* 项目描述样式 */
+#projects p {
+    font-size: 16px; /* 设置项目描述字体大小 */
+}
+
+#contact{
+    /* text-align: center; */
+}
+
+/* 联系方式样式 */
+#contact p {
+    font-size: 16px; /* 设置联系方式字体大小 */
+}
